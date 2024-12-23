@@ -1,149 +1,110 @@
-import {
-  Container,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  Box,
-  styled,
-  IconButton,
-  Divider,
-} from "@mui/material";
+import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { addToBasket } from "../store/slices/basketSlice";
-import AddIcon from "@mui/icons-material/Add";
-import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
-import { useNavigate } from "react-router-dom";
-
-const BasketCard = styled(Card)(({ theme }) => ({
-  marginBottom: theme.spacing(2),
-  transition: "box-shadow 0.3s ease-in-out",
-  "&:hover": {
-    boxShadow: theme.shadows[4],
-  },
-}));
-
-const ProductImage = styled("img")({
-  width: "100%",
-  maxWidth: "120px",
-  height: "auto",
-  objectFit: "contain",
-});
-
-const TotalSection = styled(Box)(({ theme }) => ({
-  marginTop: theme.spacing(4),
-  padding: theme.spacing(3),
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.shape.borderRadius,
-  boxShadow: theme.shadows[2],
-}));
+import {
+  selectBasketItems,
+  selectBasketTotal,
+  removeFromBasket,
+  updateQuantity,
+} from "../store/slices/basketSlice";
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  IconButton,
+  TextField,
+  Button,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const Basket = () => {
-  const { items, total } = useSelector((state) => state.basket);
   const dispatch = useDispatch();
-  const navigate = useNavigate();
+  const items = useSelector(selectBasketItems);
+  const total = useSelector(selectBasketTotal);
 
-  const handleAddMore = (item) => {
-    dispatch(addToBasket(item));
+  const handleQuantityChange = (id, quantity) => {
+    dispatch(updateQuantity({ id, quantity: parseInt(quantity) }));
   };
 
-  if (items.length === 0) {
-    return (
-      <Container sx={{ mt: 4, textAlign: "center" }}>
-        <ShoppingCartIcon
-          sx={{ fontSize: 60, color: "text.secondary", mb: 2 }}
-        />
-        <Typography variant="h5" gutterBottom>
-          Your basket is empty
-        </Typography>
-        <Button variant="contained" href="/products" sx={{ mt: 2 }}>
-          Continue Shopping
-        </Button>
-      </Container>
-    );
-  }
+  const handleRemoveItem = (id) => {
+    dispatch(removeFromBasket({ id }));
+  };
 
   return (
-    <Container sx={{ mt: 4, mb: 4 }}>
-      <Typography variant="h4" gutterBottom sx={{ mb: 4 }}>
-        Shopping Basket
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" gutterBottom>
+        Shopping Cart
       </Typography>
-      <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
-          {items.map((item) => (
-            <BasketCard key={item.id}>
-              <CardContent>
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={3} sm={2}>
-                    <ProductImage
-                      src={item.imageUrl || "https://via.placeholder.com/100"}
-                      alt={item.name}
-                    />
-                  </Grid>
-                  <Grid item xs={6} sm={7}>
-                    <Typography variant="h6" gutterBottom>
-                      {item.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      ${item.price} per item
-                    </Typography>
-                  </Grid>
-                  <Grid item xs={3} sm={3} sx={{ textAlign: "right" }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                      Qty: {item.quantity}
-                    </Typography>
-                    <IconButton
-                      color="primary"
-                      onClick={() => handleAddMore(item)}
-                      size="small"
-                    >
-                      <AddIcon />
-                    </IconButton>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </BasketCard>
-          ))}
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <TotalSection>
-            <Typography variant="h6" gutterBottom>
-              Order Summary
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
-            >
-              <Typography>Subtotal</Typography>
-              <Typography>${total.toFixed(2)}</Typography>
-            </Box>
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
-            >
-              <Typography>Shipping</Typography>
-              <Typography>Free</Typography>
-            </Box>
-            <Divider sx={{ my: 2 }} />
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
-            >
-              <Typography variant="h6">Total</Typography>
-              <Typography variant="h6">${total.toFixed(2)}</Typography>
-            </Box>
-            <Button
-              variant="contained"
-              fullWidth
-              size="large"
-              onClick={() => navigate("/checkout")}
-              sx={{ mt: 2 }}
-            >
-              Proceed to Checkout
-            </Button>
-          </TotalSection>
-        </Grid>
-      </Grid>
-    </Container>
+      {items.length === 0 ? (
+        <Typography>Your cart is empty</Typography>
+      ) : (
+        <>
+          <List>
+            {items.map((item) => (
+              <ListItem
+                key={item.id}
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mb: 2,
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", flex: 1 }}>
+                  <img
+                    src={item.imageUrl || "https://via.placeholder.com/50"}
+                    alt={item.name}
+                    style={{ width: 50, marginRight: 16 }}
+                  />
+                  <Typography>{item.name}</Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <TextField
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) =>
+                      handleQuantityChange(item.id, e.target.value)
+                    }
+                    inputProps={{ min: 1 }}
+                    sx={{ width: 80 }}
+                  />
+                  <Typography>
+                    ${(item.price * item.quantity).toFixed(2)}
+                  </Typography>
+                  <IconButton
+                    onClick={() => handleRemoveItem(item.id)}
+                    color="error"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              mt: 3,
+              borderTop: 1,
+              pt: 2,
+            }}
+          >
+            <Typography variant="h6">Total:</Typography>
+            <Typography variant="h6">${total.toFixed(2)}</Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            sx={{ mt: 3 }}
+            href="/checkout"
+          >
+            Proceed to Checkout
+          </Button>
+        </>
+      )}
+    </Box>
   );
 };
 
